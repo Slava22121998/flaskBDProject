@@ -6,7 +6,7 @@ from collections import Counter
 def get_films_by_rating_execute_query(query):
     film_json = list()
     try:
-        with sqlite3.connect('netflix.db') as connection:
+        with sqlite3.connect("netflix.db") as connection:
             cursor = connection.cursor()
             search = cursor.execute(query).fetchall()
             col_names = [description[0] for description in cursor.description]
@@ -20,17 +20,16 @@ def get_films_by_rating_execute_query(query):
 
 
 def get_film_by_name(film_name):
-    query = """
+    query = f"""
         SELECT title, country, MAX(release_year) AS release_year ,listed_in AS genre, description
         FROM netflix
-        WHERE title = ?
-        GROUP BY release_year
+        WHERE title LIKE '%{film_name}%'
 
     """
     try:
-        with sqlite3.connect('netflix.db') as connection:
+        with sqlite3.connect("netflix.db") as connection:
             cursor = connection.cursor()
-            search = cursor.execute(query, (film_name,)).fetchall()
+            search = cursor.execute(query).fetchall()
             col_names = [description[0] for description in cursor.description]  # Получаем имена колонок
             film_json = dict(zip(col_names, list(search[0])))  # Создаем словарь имя колонки БД - результат запроса
             film_json['description'] = film_json['description'].strip('\n')  # Удаляем символы переноса строки
@@ -49,7 +48,7 @@ def get_films_by_time_period(year_1, year_2):
         LIMIT 100
     """
     try:
-        with sqlite3.connect('netflix.db') as connection:
+        with sqlite3.connect("netflix.db") as connection:
             cursor = connection.cursor()
             search = cursor.execute(query, (year_1, year_2,)).fetchall()
             col_names = [description[0] for description in cursor.description]
@@ -64,12 +63,11 @@ def get_films_by_time_period(year_1, year_2):
 def get_films_by_rating(rating: str):
     if rating == 'children':
         query = """
-                        SELECT title, rating, description
-                        FROM netflix
-                        WHERE rating in ('G')
-                        ORDER BY rating DESC
-                    """
-        get_films_by_rating_execute_query(query)
+            SELECT title, rating, description
+            FROM netflix
+            WHERE rating = 'G'
+        """
+        return get_films_by_rating_execute_query(query)
 
     elif rating == 'family':
         query = """
@@ -78,7 +76,7 @@ def get_films_by_rating(rating: str):
                         WHERE rating in ('G', 'PG', 'PG-13')
                         ORDER BY rating DESC
                     """
-        get_films_by_rating_execute_query(query)
+        return get_films_by_rating_execute_query(query)
 
     elif rating == 'adult':
         query = """
@@ -87,13 +85,18 @@ def get_films_by_rating(rating: str):
                         WHERE rating in ('R', 'NC-17')
                         ORDER BY rating DESC
                     """
-        get_films_by_rating_execute_query(query)
+        return get_films_by_rating_execute_query(query)
 
 
 def get_films_by_genre(genre: str):
     film_json = list()
     # Попробовал с f-строкой сформировать запрос
-    query = f"SELECT title, description FROM netflix WHERE listed_in LIKE '%{genre}%' AND release_year BETWEEN 2019 AND 2021 LIMIT 10"
+    query = f"""SELECT title, description
+                FROM netflix 
+                WHERE listed_in LIKE '%{genre}%'
+                ORDER BY release_year DESC
+                LIMIT 10 
+                """
     try:
         with sqlite3.connect("netflix.db") as connection:
             cursor = connection.cursor()
@@ -149,5 +152,5 @@ def get_info_about_picture(type, date, genre):
     except Exception as ex:
         return f'Ошибка подключения к бд: {ex}'
 
-
-# print(get_info_about_picture('TV Show', '1925', 'TV Shows'))
+# print(get_film_by_name('Ainori Love Wagon'))
+# print(get_films_by_rating('children'))
